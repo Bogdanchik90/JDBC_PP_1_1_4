@@ -1,18 +1,15 @@
 package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-
-
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 
 
 public class UserDaoHibernateImpl implements UserDao {
@@ -57,7 +54,9 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public void saveUser(String name, String lastName, byte age) {
         try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
             session.save(new User(name,lastName,age));
+            transaction.commit();
             System.out.printf("User с именем %s добавлен в таблицу\n",name);
         } catch (Exception e) {
             e.printStackTrace();
@@ -82,8 +81,12 @@ public class UserDaoHibernateImpl implements UserDao {
     public List<User> getAllUsers() {
         List<User> us = new ArrayList<>();
         try (Session session = sessionFactory.openSession()) {
-            Query<User> query = session.createQuery("FROM" + User.class.getSimpleName(), User.class);
-            us = query.getResultList();
+            Transaction transaction = session.beginTransaction();
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<User> criteria = builder.createQuery(User.class);
+            criteria.from(User.class);
+            us = session.createQuery(criteria).getResultList();
+            transaction.commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -92,8 +95,10 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void cleanUsersTable() {
-        try (Session session = sessionFactory.openSession()){
-            session.clear();
+        try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.createSQLQuery("DELETE FROM new_table").executeUpdate();
+            transaction.commit();
         } catch (Exception e) {
             e.printStackTrace();
         }
