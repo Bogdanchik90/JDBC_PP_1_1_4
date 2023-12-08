@@ -14,6 +14,7 @@ import javax.persistence.criteria.CriteriaQuery;
 
 public class UserDaoHibernateImpl implements UserDao {
     private final SessionFactory sessionFactory;
+    Transaction transaction = null;
     public UserDaoHibernateImpl(Util util) {
         this.sessionFactory = util.getSessionFactory();
     }
@@ -22,7 +23,7 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public void createUsersTable() {
         Session session = sessionFactory.openSession();
-        Transaction transaction = session.beginTransaction();
+        transaction = session.beginTransaction();
         String str = "CREATE TABLE IF NOT EXISTS `users_`.`new_table` (\n" +
                 "  `id` BIGINT(5) NOT NULL AUTO_INCREMENT,\n" +
                 "  `name` VARCHAR(45) NULL,\n" +
@@ -40,7 +41,7 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public void dropUsersTable() {
         Session session = sessionFactory.openSession();
-        Transaction transaction = session.beginTransaction();
+        transaction = session.beginTransaction();
 
         String sql = "DROP TABLE IF EXISTS new_table";
 
@@ -54,11 +55,14 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public void saveUser(String name, String lastName, byte age) {
         try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
+            transaction = session.beginTransaction();
             session.save(new User(name,lastName,age));
             transaction.commit();
             System.out.printf("User с именем %s добавлен в таблицу\n",name);
         } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             e.printStackTrace();
         }
     }
@@ -73,6 +77,9 @@ public class UserDaoHibernateImpl implements UserDao {
             }
             transaction.commit();
         } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             e.printStackTrace();
         }
     }
@@ -88,6 +95,9 @@ public class UserDaoHibernateImpl implements UserDao {
             us = session.createQuery(criteria).getResultList();
             transaction.commit();
         } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             e.printStackTrace();
         }
         return us;
@@ -100,6 +110,9 @@ public class UserDaoHibernateImpl implements UserDao {
             session.createSQLQuery("DELETE FROM new_table").executeUpdate();
             transaction.commit();
         } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             e.printStackTrace();
         }
     }
